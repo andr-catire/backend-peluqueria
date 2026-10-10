@@ -9,5 +9,8 @@ export default [
     languageOptions: {
       globals: globals.node,
     },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
   },
 ];
