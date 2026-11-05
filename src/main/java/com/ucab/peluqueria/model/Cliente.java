@@ -1,4 +1,3 @@
- 
 package com.ucab.peluqueria.model;
 
 import jakarta.persistence.Column;

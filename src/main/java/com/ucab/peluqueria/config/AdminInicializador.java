@@ -59,6 +59,7 @@ public class AdminInicializador implements CommandLineRunner {
         }
 
         Usuario admin = new Usuario();
+        admin.setNombre("Administrador");
         admin.setEmail(correo);
         admin.setPassword(passwordEncoder.encode(password));
         admin.setRol(Rol.ADMIN);

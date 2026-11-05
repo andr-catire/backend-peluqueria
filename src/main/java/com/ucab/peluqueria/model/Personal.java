@@ -9,13 +9,16 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotEmpty;
 
+/**
+ * Estilista de la peluquería (el "Personal" del Brief). Que tenga al menos un servicio asociado
+ * se valida en el DTO de registro, no aquí: la colección es LAZY y validarla en la entidad
+ * obligaría a cargarla en cada actualización.
+ */
 @Entity
 @Table(name = "personal")
 public class Personal extends Usuario {
 
-    @NotEmpty
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "personal_servicios",

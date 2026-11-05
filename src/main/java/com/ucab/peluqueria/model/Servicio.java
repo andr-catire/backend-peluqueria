@@ -25,14 +25,13 @@ public class Servicio {
     @Column(nullable = false, length = 120)
     private String nombre;
 
-    @Column(columnDefinition = "TEXT")
-    private String descripcion;
-
+    /** Costo informativo: el sistema no cobra en línea. Debe ser mayor que 0. */
     @NotNull
-    @DecimalMin("0.00")
+    @DecimalMin(value = "0.00", inclusive = false)
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal costo;
 
+    /** Tiempo de ejecución en minutos. Define cuánto ocupa la cita en la agenda. */
     @NotNull
     @Positive
     @Column(name = "duracion_minutos", nullable = false)
@@ -47,9 +46,6 @@ public class Servicio {
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
-
     public BigDecimal getCosto() { return costo; }
     public void setCosto(BigDecimal costo) { this.costo = costo; }
 
@@ -58,4 +54,21 @@ public class Servicio {
 
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
+
+    // Servicio se guarda en un Set (Personal.servicios): igualdad por id, sin romper los proxies de Hibernate.
+    @Override
+    public boolean equals(Object otro) {
+        if (this == otro) {
+            return true;
+        }
+        if (!(otro instanceof Servicio servicio)) {
+            return false;
+        }
+        return getId() != null && getId().equals(servicio.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Servicio.class.hashCode();
+    }
 }
