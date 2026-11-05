@@ -52,6 +52,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/servicios").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .headers(headers -> headers
                 .httpStrictTransportSecurity(hsts -> hsts
