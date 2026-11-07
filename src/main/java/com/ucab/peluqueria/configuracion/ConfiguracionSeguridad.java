@@ -16,22 +16,30 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.ucab.peluqueria.seguridad.FiltroAutenticacionJwt;
+
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Seguridad de la API REST: sin sesión en el servidor, sin formulario de login y con CORS limitado
- * al frontend. De momento solo /api/health es público. Cuando llegue la historia de inicio de
- * sesión se agrega aquí el filtro JWT (carpeta security/) y las rutas públicas y por rol.
+ * Seguridad de la API REST: sin sesión en el servidor, autenticación por token JWT en el encabezado
+ * Authorization: Bearer <token> y con CORS limitado al frontend.
  */
 @Configuration
 @EnableWebSecurity
 public class ConfiguracionSeguridad {
+
+    private final FiltroAutenticacionJwt filtroJwt;
+
+    public ConfiguracionSeguridad(FiltroAutenticacionJwt filtroJwt) {
+        this.filtroJwt = filtroJwt;
+    }
 
     // 12 rondas de BCrypt: encarece los ataques de diccionario y no se nota al iniciar sesión.
     @Bean
@@ -43,7 +51,7 @@ public class ConfiguracionSeguridad {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(Customizer.withDefaults())
-            // API sin cookies de sesión: la autenticación irá en el encabezado Authorization (JWT).
+            // API sin cookies de sesión: la autenticación va en el encabezado Authorization (JWT).
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .httpBasic(AbstractHttpConfigurer::disable)
@@ -52,8 +60,10 @@ public class ConfiguracionSeguridad {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/servicios").hasRole("ADMIN")
                 .anyRequest().authenticated())
+            .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)

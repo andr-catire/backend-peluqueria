@@ -20,14 +20,25 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.ucab.peluqueria.configuracion.ConfiguracionSeguridadMetodos;
 import com.ucab.peluqueria.configuracion.ConfiguracionSeguridad;
-import com.ucab.peluqueria.transferencia.ServicioRespuesta;
 import com.ucab.peluqueria.excepcion.ManejadorGlobalExcepciones;
+import com.ucab.peluqueria.seguridad.FiltroAutenticacionJwt;
+import com.ucab.peluqueria.seguridad.ServicioJwt;
 import com.ucab.peluqueria.servicio.GestorServicios;
+import com.ucab.peluqueria.transferencia.ServicioRespuesta;
 
 /** Pruebas de acceso al endpoint de servicios con la seguridad real configurada. */
 @WebMvcTest(ControladorServicio.class)
-@Import({ConfiguracionSeguridad.class, ConfiguracionSeguridadMetodos.class, ManejadorGlobalExcepciones.class})
-@TestPropertySource(properties = "app.frontend-url=http://localhost:5173")
+@Import({
+        ConfiguracionSeguridad.class,
+        ConfiguracionSeguridadMetodos.class,
+        ManejadorGlobalExcepciones.class,
+        FiltroAutenticacionJwt.class,
+        ServicioJwt.class
+})
+@TestPropertySource(properties = {
+        "app.frontend-url=http://localhost:5173",
+        "app.jwt.secret=secreto_de_prueba_para_tests_unitarios_123456789"
+})
 class PruebasSeguridadControladorServicio {
 
     private static final String CUERPO_VALIDO = """
