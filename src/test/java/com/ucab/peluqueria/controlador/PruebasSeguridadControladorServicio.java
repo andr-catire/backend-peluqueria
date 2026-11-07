@@ -63,7 +63,7 @@ class PruebasSeguridadControladorServicio {
     @WithMockUser(roles = "ADMIN")
     void unAdministradorPuedeCrearYResponde201() throws Exception {
         when(gestorServicios.crear(any())).thenReturn(
-                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45));
+                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null));
 
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)

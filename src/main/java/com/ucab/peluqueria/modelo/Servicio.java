@@ -25,6 +25,9 @@ public class Servicio {
     @Column(nullable = false, length = 120)
     private String nombre;
 
+    @Column(columnDefinition = "TEXT")
+    private String descripcion;
+
     /** Costo informativo: el sistema no cobra en línea. Debe ser mayor que 0. */
     @NotNull
     @DecimalMin(value = "0.00", inclusive = false)
@@ -45,6 +48,9 @@ public class Servicio {
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
+
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
     public BigDecimal getCosto() { return costo; }
     public void setCosto(BigDecimal costo) { this.costo = costo; }

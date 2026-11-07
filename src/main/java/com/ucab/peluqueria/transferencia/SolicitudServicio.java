@@ -2,8 +2,8 @@ package com.ucab.peluqueria.transferencia;
 
 import java.math.BigDecimal;
 
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -19,13 +19,17 @@ public record SolicitudServicio(
         String nombre,
 
         @NotNull(message = "El costo es obligatorio.")
-        @DecimalMin(value = "0.00", inclusive = false, message = "El costo debe ser mayor que 0.")
+        @Positive(message = "El costo debe ser mayor que 0.")
         @Digits(integer = 8, fraction = 2, message = "El costo debe tener como máximo 8 enteros y 2 decimales.")
         BigDecimal costo,
 
         @NotNull(message = "La duración es obligatoria.")
         @Positive(message = "La duración debe ser un número entero de minutos mayor que 0")
+        @Max(value = 480, message = "La duración no puede superar los 480 minutos.")
         @Digits(integer = 9, fraction = 0,
                 message = "La duración debe ser un número entero de minutos mayor que 0")
-        BigDecimal duracionMinutos) {
+        BigDecimal duracionMinutos,
+
+        @Size(max = 1000, message = "La descripción no puede superar los 1000 caracteres.")
+        String descripcion) {
 }

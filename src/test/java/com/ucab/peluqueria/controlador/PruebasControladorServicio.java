@@ -40,7 +40,7 @@ class PruebasControladorServicio {
     @Test
     void creaUnServicioValidoYResponde201() throws Exception {
         when(gestorServicios.crear(any())).thenReturn(
-                new ServicioRespuesta(1L, "Corte de cabello", new BigDecimal("25.50"), 45));
+                new ServicioRespuesta(1L, "Corte de cabello", new BigDecimal("25.50"), 45, "Descripción"));
 
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -86,7 +86,7 @@ class PruebasControladorServicio {
     @Test
     void responde409CuandoElServicioLanzaDuplicado() throws Exception {
         when(gestorServicios.crear(any())).thenThrow(
-                ExcepcionReglaNegocio.conflicto("DUPLICATE", "Ya existe un servicio con ese nombre."));
+                ExcepcionReglaNegocio.conflicto("DUPLICATE", "El servicio ya existe."));
 
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -95,6 +95,6 @@ class PruebasControladorServicio {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("DUPLICATE"))
-                .andExpect(jsonPath("$.message").value("Ya existe un servicio con ese nombre."));
+                .andExpect(jsonPath("$.message").value("El servicio ya existe."));
     }
 }
