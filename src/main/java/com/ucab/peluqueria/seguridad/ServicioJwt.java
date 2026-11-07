@@ -25,7 +25,7 @@ public class ServicioJwt {
 
     private static final Logger log = LoggerFactory.getLogger(ServicioJwt.class);
     private static final String ALGORITMO = "HmacSHA256";
-    private static final long DURACION_SEGUNDOS = 86400L; // 24 horas
+    private final long duracionSegundos;
 
     // Header constante para JWT con HS256: {"alg":"HS256","typ":"JWT"}
     private static final String HEADER_JSON = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
@@ -34,8 +34,14 @@ public class ServicioJwt {
     private final byte[] secretKeyBytes;
 
     public ServicioJwt(
-            @Value("${app.jwt.secret:clave_secreta_para_desarrollo_local_segura_peluqueria_2026_ucab}") String secret) {
+            @Value("${app.jwt.secret:}") String secret,
+            @Value("${app.jwt.expiration:86400}") long duracionSegundos) {
+        if (secret == null || secret.isBlank() || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException(
+                    "Configura JWT_SECRET con al menos 32 bytes antes de iniciar la aplicación.");
+        }
         this.secretKeyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        this.duracionSegundos = duracionSegundos;
     }
 
     /**
@@ -43,7 +49,7 @@ public class ServicioJwt {
      */
     public String generarToken(Usuario usuario) {
         long ahora = Instant.now().getEpochSecond();
-        long expira = ahora + DURACION_SEGUNDOS;
+        long expira = ahora + duracionSegundos;
 
         try {
             String payloadJson = String.format(

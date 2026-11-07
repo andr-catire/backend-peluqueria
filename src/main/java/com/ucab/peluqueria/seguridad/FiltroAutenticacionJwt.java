@@ -10,23 +10,28 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.ucab.peluqueria.modelo.Usuario;
+import com.ucab.peluqueria.repositorio.RepositorioUsuario;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Filtro que intercepta cada petición HTTP, extrae el token Bearer del encabezado
- * Authorization y establece la autenticación en el SecurityContext si el token es válido.
+ * Filtro que intercepta cada petición HTTP, valida el Bearer y establece la autenticación
+ * con el rol actual del usuario en base de datos.
  */
 @Component
 public class FiltroAutenticacionJwt extends OncePerRequestFilter {
 
     private static final String PREFIJO_BEARER = "Bearer ";
     private final ServicioJwt servicioJwt;
+    private final RepositorioUsuario repositorioUsuario;
 
-    public FiltroAutenticacionJwt(ServicioJwt servicioJwt) {
+    public FiltroAutenticacionJwt(ServicioJwt servicioJwt, RepositorioUsuario repositorioUsuario) {
         this.servicioJwt = servicioJwt;
+        this.repositorioUsuario = repositorioUsuario;
     }
 
     @Override
@@ -42,14 +47,18 @@ public class FiltroAutenticacionJwt extends OncePerRequestFilter {
 
             if (servicioJwt.validarToken(token)) {
                 String email = servicioJwt.extraerEmail(token);
-                String rol = servicioJwt.extraerRol(token);
 
-                if (email != null && rol != null) {
-                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + rol);
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(email, null, List.of(authority));
+                if (email != null) {
+                    Usuario usuario = repositorioUsuario.findByEmailIgnoreCase(email).orElse(null);
 
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    if (usuario != null && usuario.isActivo() && usuario.getRol() != null) {
+                        SimpleGrantedAuthority authority =
+                                new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name());
+                        UsernamePasswordAuthenticationToken auth =
+                                new UsernamePasswordAuthenticationToken(email, null, List.of(authority));
+
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                    }
                 }
             }
         }

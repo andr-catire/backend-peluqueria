@@ -28,8 +28,8 @@ import com.ucab.peluqueria.seguridad.FiltroAutenticacionJwt;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Seguridad de la API REST: sin sesión en el servidor, autenticación por token JWT en el encabezado
- * Authorization: Bearer <token> y con CORS limitado al frontend.
+ * Seguridad REST sin sesión: públicos /api/health, login, registro y GET /api/servicios.
+ * El filtro JWT valida el Bearer y las rutas por rol usan @PreAuthorize.
  */
 @Configuration
 @EnableWebSecurity
@@ -48,20 +48,27 @@ public class ConfiguracionSeguridad {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+            @Value("${app.basic-auth:false}") boolean basicAuth) throws Exception {
+        // HTTP Basic SOLO para pruebas locales sin frontend ni login. Por defecto está apagado.
+        if (basicAuth) {
+            http.httpBasic(Customizer.withDefaults());
+        } else {
+            http.httpBasic(AbstractHttpConfigurer::disable);
+        }
+
         http
             .cors(Customizer.withDefaults())
-            // API sin cookies de sesión: la autenticación va en el encabezado Authorization (JWT).
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .httpBasic(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .logout(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registro").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/servicios").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/servicios", "/api/servicios/*/imagen").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers
@@ -73,11 +80,9 @@ public class ConfiguracionSeguridad {
                 .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
                     "camera=(), microphone=(), geolocation=(), payment=()")))
             .exceptionHandling(handling -> handling
-                // Sin credenciales válidas.
                 .authenticationEntryPoint((request, response, exception) ->
                     responderJson(response, HttpServletResponse.SC_UNAUTHORIZED, "UNAUTHORIZED",
                         "Inicia sesión para continuar."))
-                // Autenticado, pero sin el rol requerido.
                 .accessDeniedHandler((request, response, exception) ->
                     responderJson(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN",
                         "No tienes permisos para realizar esta acción.")));

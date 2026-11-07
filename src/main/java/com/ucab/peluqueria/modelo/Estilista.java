@@ -11,13 +11,13 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
 /**
- * Estilista de la peluquería (el "Personal" del Brief). Que tenga al menos un servicio asociado
+ * Estilista de la peluquería (el "Estilista" del Brief). Que tenga al menos un servicio asociado
  * se valida en el DTO de registro, no aquí: la colección es LAZY y validarla en la entidad
  * obligaría a cargarla en cada actualización.
  */
 @Entity
 @Table(name = "personal")
-public class Personal extends Usuario {
+public class Estilista extends Usuario {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -26,7 +26,7 @@ public class Personal extends Usuario {
             inverseJoinColumns = @JoinColumn(name = "servicio_id"))
     private Set<Servicio> servicios = new HashSet<>();
 
-    public Personal() {
+    public Estilista() {
         setRol(Rol.PERSONAL);
     }
 

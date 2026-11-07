@@ -1,5 +1,6 @@
 package com.ucab.peluqueria.repositorio;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,5 +12,5 @@ public interface RepositorioServicio extends JpaRepository<Servicio, Long> {
 
     Optional<Servicio> findByNombreIgnoreCase(String nombre);
 
-    boolean existsByNombreIgnoreCase(String nombre);
+    List<Servicio> findByActivoTrueOrderByNombreAsc();
 }

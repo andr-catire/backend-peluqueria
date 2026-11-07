@@ -17,7 +17,7 @@ class PruebasServicioJwt {
 
     @BeforeEach
     void preparar() {
-        servicioJwt = new ServicioJwt("secreto_de_prueba_con_longitud_suficiente_para_hmac256");
+        servicioJwt = new ServicioJwt("secreto_de_prueba_con_longitud_suficiente_para_hmac256", 86400);
     }
 
     @Test

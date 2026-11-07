@@ -2,11 +2,13 @@ package com.ucab.peluqueria.controlador;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.ucab.peluqueria.configuracion.ConfiguracionSeguridadMetodos;
 import com.ucab.peluqueria.configuracion.ConfiguracionSeguridad;
 import com.ucab.peluqueria.excepcion.ManejadorGlobalExcepciones;
+import com.ucab.peluqueria.repositorio.RepositorioUsuario;
 import com.ucab.peluqueria.seguridad.FiltroAutenticacionJwt;
 import com.ucab.peluqueria.seguridad.ServicioJwt;
 import com.ucab.peluqueria.servicio.GestorServicios;
@@ -51,6 +54,9 @@ class PruebasSeguridadControladorServicio {
     @MockitoBean
     private GestorServicios gestorServicios;
 
+    @MockitoBean
+    private RepositorioUsuario repositorioUsuario;
+
     @Test
     void sinSesionResponde401() throws Exception {
         mockMvc.perform(post("/api/servicios")
@@ -58,6 +64,16 @@ class PruebasSeguridadControladorServicio {
                         .content(CUERPO_VALIDO))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void sinSesionPuedeListarServicios() throws Exception {
+        when(gestorServicios.listar()).thenReturn(List.of(
+                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null, null)));
+
+        mockMvc.perform(get("/api/servicios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Corte"));
     }
 
     @Test
@@ -74,7 +90,7 @@ class PruebasSeguridadControladorServicio {
     @WithMockUser(roles = "ADMIN")
     void unAdministradorPuedeCrearYResponde201() throws Exception {
         when(gestorServicios.crear(any())).thenReturn(
-                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null));
+                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null, null));
 
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)

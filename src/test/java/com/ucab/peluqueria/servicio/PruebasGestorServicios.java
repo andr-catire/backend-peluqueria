@@ -1,6 +1,7 @@
 package com.ucab.peluqueria.servicio;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -27,12 +29,14 @@ import com.ucab.peluqueria.transferencia.SolicitudServicio;
 class PruebasGestorServicios {
 
     private RepositorioServicio repositorio;
+    private GestorImagenes gestorImagenes;
     private GestorServicios servicio;
 
     @BeforeEach
     void preparar() {
         repositorio = mock(RepositorioServicio.class);
-        servicio = new GestorServicios(repositorio);
+        gestorImagenes = mock(GestorImagenes.class);
+        servicio = new GestorServicios(repositorio, gestorImagenes);
     }
 
     private static SolicitudServicio solicitud(String nombre, String costo, String duracion) {
@@ -78,7 +82,7 @@ class PruebasGestorServicios {
                 () -> servicio.crear(solicitud("Corte de cabello", "25.50", "45")));
 
         assertEquals("DUPLICATE", excepcion.getCodigo());
-        assertEquals("El servicio ya existe.", excepcion.getMessage());
+        assertEquals("Ya existe un servicio con ese nombre.", excepcion.getMessage());
         assertEquals(HttpStatus.CONFLICT, excepcion.getStatus());
         verify(repositorio, never()).save(any());
     }
@@ -104,5 +108,64 @@ class PruebasGestorServicios {
         assertEquals(45, existente.getDuracionMinutos());
         assertEquals(2L, respuesta.id());
         verify(repositorio).save(existente);
+    }
+
+    @Test
+    void guardaUnaDescripcionEnBlancoComoNull() {
+        when(repositorio.findByNombreIgnoreCase("Corte de cabello")).thenReturn(Optional.empty());
+        when(repositorio.save(any(Servicio.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        servicio.crear(new SolicitudServicio(
+                "Corte de cabello", new BigDecimal("25.50"), new BigDecimal("45"), "   "));
+
+        ArgumentCaptor<Servicio> captor = ArgumentCaptor.forClass(Servicio.class);
+        verify(repositorio).save(captor.capture());
+        assertNull(captor.getValue().getDescripcion());
+    }
+
+    @Test
+    void listaSoloActivosOrdenadosPorNombre() {
+        Servicio corte = new Servicio();
+        corte.setId(1L);
+        corte.setNombre("Corte");
+        corte.setCosto(new BigDecimal("15.00"));
+        corte.setDuracionMinutos(45);
+
+        Servicio peinado = new Servicio();
+        peinado.setId(2L);
+        peinado.setNombre("Peinado");
+        peinado.setCosto(new BigDecimal("10.00"));
+        peinado.setDuracionMinutos(30);
+
+        when(repositorio.findByActivoTrueOrderByNombreAsc()).thenReturn(List.of(corte, peinado));
+
+        List<ServicioRespuesta> respuesta = servicio.listar();
+
+        assertEquals(List.of("Corte", "Peinado"),
+                respuesta.stream().map(ServicioRespuesta::nombre).toList());
+        verify(repositorio).findByActivoTrueOrderByNombreAsc();
+    }
+
+    @Test
+    void guardaLaImagenYDevuelveSuUrl() throws Exception {
+        when(repositorio.findByNombreIgnoreCase("Corte")).thenReturn(Optional.empty());
+        when(repositorio.save(any(Servicio.class))).thenAnswer(invocacion -> {
+            Servicio guardado = invocacion.getArgument(0);
+            if (guardado.getId() == null) {
+                guardado.setId(9L);
+            }
+            return guardado;
+        });
+
+        org.springframework.web.multipart.MultipartFile imagen =
+                mock(org.springframework.web.multipart.MultipartFile.class);
+        when(imagen.isEmpty()).thenReturn(false);
+
+        ServicioRespuesta respuesta = servicio.crear(
+                new SolicitudServicio("Corte", new BigDecimal("20.00"), new BigDecimal("30"), null),
+                imagen);
+
+        verify(gestorImagenes).guardar(9L, imagen);
+        assertEquals("/api/servicios/9/imagen", respuesta.imagenUrl());
     }
 }
