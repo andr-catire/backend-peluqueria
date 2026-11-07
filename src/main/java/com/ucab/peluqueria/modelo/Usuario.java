@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
@@ -44,9 +45,16 @@ public class Usuario {
     @Column(nullable = false)
     private boolean activo = true;
 
-    /** La asigna la base de datos (DEFAULT now()). */
-    @Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
+    /** La asigna Hibernate al insertar, para no depender de un default de la base. */
+    @Column(name = "creado_en", nullable = false, updatable = false)
     private Instant creadoEn;
+
+    @PrePersist
+    void asignarCreadoEn() {
+        if (creadoEn == null) {
+            creadoEn = Instant.now();
+        }
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
