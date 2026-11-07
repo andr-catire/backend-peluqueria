@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -110,10 +112,26 @@ class PruebasSeguridadEstilistaController {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void unAdministradorPromueveYResponde201() throws Exception {
+        when(estilistaService.promoverAEmpleado(any()))
+                .thenReturn(new EstilistaRespuesta(
+                        8L, "Luis", "luis@correo.com", Rol.PERSONAL, List.of()));
+
+        mockMvc.perform(post("/api/personal/promover")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"idUsuario":8,"serviciosIds":[1]}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(8))
+                .andExpect(jsonPath("$.rol").value("PERSONAL"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void rechazaLaPromocionSinServicios() throws Exception {
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                        .post("/api/personal/promover")
-                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/personal/promover")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"idUsuario":8,"serviciosIds":[]}
                                 """))
