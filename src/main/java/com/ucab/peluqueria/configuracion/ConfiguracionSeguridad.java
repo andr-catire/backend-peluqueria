@@ -25,9 +25,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Seguridad de la API REST: sin sesión en el servidor, sin formulario de login y con CORS limitado
- * al frontend. De momento solo /api/health es público. Cuando llegue la historia de inicio de
- * sesión se agrega aquí el filtro JWT (carpeta security/) y las rutas públicas y por rol.
+ * Seguridad REST sin sesión ni formulario: públicos /api/health, el registro y GET /api/servicios.
+ * Las rutas por rol se protegen con @PreAuthorize; el filtro JWT llegará con la historia de login.
  */
 @Configuration
 @EnableWebSecurity
@@ -40,19 +39,28 @@ public class ConfiguracionSeguridad {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+            @Value("${app.basic-auth:false}") boolean basicAuth) throws Exception {
+        // HTTP Basic SOLO para pruebas locales sin frontend ni login. Por defecto está apagado.
+        if (basicAuth) {
+            http.httpBasic(Customizer.withDefaults());
+        } else {
+            http.httpBasic(AbstractHttpConfigurer::disable);
+        }
+
         http
             .cors(Customizer.withDefaults())
             // API sin cookies de sesión: la autenticación irá en el encabezado Authorization (JWT).
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .httpBasic(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .logout(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/registro").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/servicios").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/servicios", "/api/servicios/*/imagen").permitAll()
                 .anyRequest().authenticated())
             .headers(headers -> headers
                 .httpStrictTransportSecurity(hsts -> hsts

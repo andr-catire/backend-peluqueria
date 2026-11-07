@@ -16,7 +16,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * Cuenta de acceso al sistema. Un usuario sin subtabla es un ADMIN; Cliente y Personal la extienden.
+ * Cuenta de acceso al sistema. Un usuario sin subtabla es un ADMIN; Cliente y Estilista la extienden.
  */
 @Entity
 @Table(name = "usuarios")

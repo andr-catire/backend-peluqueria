@@ -43,6 +43,9 @@ public class Servicio {
     @Column(nullable = false)
     private boolean activo = true;
 
+    @Column(name = "tiene_imagen", nullable = false, columnDefinition = "boolean default false")
+    private boolean tieneImagen = false;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -61,7 +64,10 @@ public class Servicio {
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
 
-    // Servicio se guarda en un Set (Personal.servicios): igualdad por id, sin romper los proxies de Hibernate.
+    public boolean isTieneImagen() { return tieneImagen; }
+    public void setTieneImagen(boolean tieneImagen) { this.tieneImagen = tieneImagen; }
+
+    // Servicio se guarda en un Set (Estilista.servicios): igualdad por id, sin romper los proxies de Hibernate.
     @Override
     public boolean equals(Object otro) {
         if (this == otro) {

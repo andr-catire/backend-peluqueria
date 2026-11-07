@@ -22,7 +22,7 @@ public class Cliente extends Usuario {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "estilista_habitual_id")
-    private Personal estilistaHabitual;
+    private Estilista estilistaHabitual;
 
     public Cliente() {
         setRol(Rol.CLIENTE);
@@ -34,6 +34,6 @@ public class Cliente extends Usuario {
     public String getTelefono() { return telefono; }
     public void setTelefono(String telefono) { this.telefono = telefono; }
 
-    public Personal getEstilistaHabitual() { return estilistaHabitual; }
-    public void setEstilistaHabitual(Personal estilistaHabitual) { this.estilistaHabitual = estilistaHabitual; }
+    public Estilista getEstilistaHabitual() { return estilistaHabitual; }
+    public void setEstilistaHabitual(Estilista estilistaHabitual) { this.estilistaHabitual = estilistaHabitual; }
 }

@@ -9,14 +9,23 @@ import com.ucab.peluqueria.modelo.Servicio;
  * entrega GestorServicios.
  */
 public record ServicioRespuesta(
-        Long id, String nombre, BigDecimal costo, Integer duracionMinutos, String descripcion) {
+        Long id,
+        String nombre,
+        BigDecimal costo,
+        Integer duracionMinutos,
+        String descripcion,
+        String imagenUrl) {
 
     public static ServicioRespuesta desde(Servicio servicio) {
+        String imagenUrl = servicio.isTieneImagen() && servicio.getId() != null
+                ? "/api/servicios/" + servicio.getId() + "/imagen"
+                : null;
         return new ServicioRespuesta(
                 servicio.getId(),
                 servicio.getNombre(),
                 servicio.getCosto(),
                 servicio.getDuracionMinutos(),
-                servicio.getDescripcion());
+                servicio.getDescripcion(),
+                imagenUrl);
     }
 }

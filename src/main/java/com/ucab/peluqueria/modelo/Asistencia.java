@@ -30,7 +30,7 @@ public class Asistencia {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "personal_id", nullable = false)
-    private Personal personal;
+    private Estilista personal;
 
     @NotNull
     @Column(nullable = false)
@@ -47,8 +47,8 @@ public class Asistencia {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Personal getPersonal() { return personal; }
-    public void setPersonal(Personal personal) { this.personal = personal; }
+    public Estilista getPersonal() { return personal; }
+    public void setPersonal(Estilista personal) { this.personal = personal; }
 
     public LocalDate getFecha() { return fecha; }
     public void setFecha(LocalDate fecha) { this.fecha = fecha; }

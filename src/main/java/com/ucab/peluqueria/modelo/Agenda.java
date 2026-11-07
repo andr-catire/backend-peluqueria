@@ -35,7 +35,7 @@ public class Agenda {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "estilista_id", nullable = false)
-    private Personal estilista;
+    private Estilista estilista;
 
     @NotNull
     @Column(nullable = false)
@@ -51,8 +51,8 @@ public class Agenda {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Personal getEstilista() { return estilista; }
-    public void setEstilista(Personal estilista) { this.estilista = estilista; }
+    public Estilista getEstilista() { return estilista; }
+    public void setEstilista(Estilista estilista) { this.estilista = estilista; }
 
     public LocalDate getFecha() { return fecha; }
     public void setFecha(LocalDate fecha) { this.fecha = fecha; }

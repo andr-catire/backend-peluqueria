@@ -3,11 +3,15 @@ package com.ucab.peluqueria.controlador;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -15,8 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.ucab.peluqueria.transferencia.ServicioRespuesta;
 import com.ucab.peluqueria.excepcion.ManejadorGlobalExcepciones;
@@ -40,7 +46,7 @@ class PruebasControladorServicio {
     @Test
     void creaUnServicioValidoYResponde201() throws Exception {
         when(gestorServicios.crear(any())).thenReturn(
-                new ServicioRespuesta(1L, "Corte de cabello", new BigDecimal("25.50"), 45, "Descripción"));
+                new ServicioRespuesta(1L, "Corte de cabello", new BigDecimal("25.50"), 45, "Descripción", null));
 
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -65,6 +71,8 @@ class PruebasControladorServicio {
     }
 
     static Stream<String> cuerposInvalidos() {
+        String descripcionLarga = "a".repeat(1001);
+
         return Stream.of(
                 """
                 {"nombre":"","costo":25.50,"duracionMinutos":45}
@@ -79,14 +87,53 @@ class PruebasControladorServicio {
                 {"nombre":"Corte","costo":25.50,"duracionMinutos":0}
                 """,
                 """
+                {"nombre":"Corte","costo":25.50,"duracionMinutos":481}
+                """,
+                """
                 {"nombre":"Corte","costo":25.50,"duracionMinutos":45.5}
-                """);
+                """,
+                """
+                {"nombre":"Corte","costo":25.50,"duracionMinutos":45,"descripcion":"%s"}
+                """.formatted(descripcionLarga));
+    }
+
+    @Test
+    void listaServiciosActivosOrdenadosYResponde200() throws Exception {
+        when(gestorServicios.listar()).thenReturn(List.of(
+                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null, null),
+                new ServicioRespuesta(2L, "Peinado", new BigDecimal("12.00"), 30, null, null)));
+
+        mockMvc.perform(get("/api/servicios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Corte"))
+                .andExpect(jsonPath("$[1].nombre").value("Peinado"));
+    }
+
+    @Test
+    void creaUnServicioConImagenYResponde201() throws Exception {
+        when(gestorServicios.crear(any(), any(MultipartFile.class))).thenReturn(
+                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null,
+                        "/api/servicios/1/imagen"));
+
+        MockMultipartFile servicioPart = new MockMultipartFile(
+                "servicio", "", MediaType.APPLICATION_JSON_VALUE,
+                """
+                {"nombre":"Corte","costo":25.50,"duracionMinutos":45}
+                """.getBytes(StandardCharsets.UTF_8));
+        MockMultipartFile imagenPart = new MockMultipartFile(
+                "imagen", "servicio.webp", "image/webp", new byte[]{1, 2, 3});
+
+        mockMvc.perform(multipart("/api/servicios").file(servicioPart).file(imagenPart))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.imagenUrl").value("/api/servicios/1/imagen"));
     }
 
     @Test
     void responde409CuandoElServicioLanzaDuplicado() throws Exception {
         when(gestorServicios.crear(any())).thenThrow(
-                ExcepcionReglaNegocio.conflicto("DUPLICATE", "El servicio ya existe."));
+                ExcepcionReglaNegocio.conflicto(
+                        "DUPLICATE", "Ya existe un servicio con ese nombre."));
 
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -95,6 +142,6 @@ class PruebasControladorServicio {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("DUPLICATE"))
-                .andExpect(jsonPath("$.message").value("El servicio ya existe."));
+                .andExpect(jsonPath("$.message").value("Ya existe un servicio con ese nombre."));
     }
 }

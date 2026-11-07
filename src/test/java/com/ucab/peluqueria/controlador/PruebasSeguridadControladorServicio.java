@@ -2,11 +2,13 @@ package com.ucab.peluqueria.controlador;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,16 @@ class PruebasSeguridadControladorServicio {
     }
 
     @Test
+    void sinSesionPuedeListarServicios() throws Exception {
+        when(gestorServicios.listar()).thenReturn(List.of(
+                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null, null)));
+
+        mockMvc.perform(get("/api/servicios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Corte"));
+    }
+
+    @Test
     @WithMockUser(roles = "CLIENTE")
     void unClienteAutenticadoResponde403() throws Exception {
         mockMvc.perform(post("/api/servicios")
@@ -63,7 +75,7 @@ class PruebasSeguridadControladorServicio {
     @WithMockUser(roles = "ADMIN")
     void unAdministradorPuedeCrearYResponde201() throws Exception {
         when(gestorServicios.crear(any())).thenReturn(
-                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null));
+                new ServicioRespuesta(1L, "Corte", new BigDecimal("25.50"), 45, null, null));
 
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)
