@@ -12,17 +12,11 @@ import com.ucab.peluqueria.modelo.Servicio;
 
 /**
  * Acceso a datos de estilistas (tabla personal). Lo usa EstilistaService.
- *
- * <p>Se usan consultas nativas sobre la tabla personal y no findById de la entidad: un usuario
- * promovido conserva su fila en clientes, y con herencia JOINED Hibernate resuelve ese id como
- * Cliente, por lo que cargarlo como Estilista devuelve vacío.</p>
  */
 public interface RepositorioEstilista extends Repository<Estilista, Long> {
 
     /**
      * Crea la fila de la subtabla personal para un usuario que se promociona.
-     * Con herencia JOINED no basta con cambiar usuarios.rol: la fila de la subtabla debe existir
-     * para que el usuario sea un Estilista. ON CONFLICT evita duplicarla si ya existía.
      */
     @Modifying
     @Query(value = "INSERT INTO personal (id) VALUES (:id) ON CONFLICT (id) DO NOTHING", nativeQuery = true)
@@ -68,4 +62,16 @@ public interface RepositorioEstilista extends Repository<Estilista, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "DELETE FROM personal_servicios WHERE personal_id = :id", nativeQuery = true)
     void eliminarServicios(@Param("id") Long id);
+
+    /** Estilistas activos que ofrecen un servicio específico. */
+    @Query(value = """
+            SELECT u.id, u.nombre, u.email
+            FROM usuarios u
+            JOIN personal p ON p.id = u.id
+            JOIN personal_servicios ps ON ps.personal_id = p.id
+            WHERE ps.servicio_id = :idServicio
+              AND u.activo = true
+            ORDER BY u.nombre
+            """, nativeQuery = true)
+    List<Object[]> buscarPorServicio(@Param("idServicio") Long idServicio);
 }

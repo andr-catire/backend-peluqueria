@@ -68,7 +68,7 @@ public class ConfiguracionSeguridad {
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registro").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/servicios").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/servicios", "/api/servicios/*", "/api/servicios/*/imagen").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/servicios/**", "/api/citas/disponibilidad").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers
