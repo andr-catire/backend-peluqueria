@@ -57,12 +57,13 @@ public class CitaService {
         this.repositorioUsuario = repositorioUsuario;
     }
 
-    /** Lista los estilistas que ofrecen un servicio específico. */
+    /** Lista los estilistas activos que ofrecen un servicio activo específico. */
     @Transactional(readOnly = true)
     public List<EstilistaResumenRespuesta> obtenerEstilistasPorServicio(Long servicioId) {
-        if (!repositorioServicio.existsById(servicioId)) {
-            throw new ExcepcionRecursoNoEncontrado("El servicio no existe.");
-        }
+        repositorioServicio.findById(servicioId)
+                .filter(Servicio::isActivo)
+                .orElseThrow(() -> ExcepcionReglaNegocio.noEncontrado(
+                        "NOT_FOUND", "El servicio no existe."));
 
         List<Object[]> filas = repositorioEstilista.buscarPorServicio(servicioId);
         List<EstilistaResumenRespuesta> resultado = new ArrayList<>();

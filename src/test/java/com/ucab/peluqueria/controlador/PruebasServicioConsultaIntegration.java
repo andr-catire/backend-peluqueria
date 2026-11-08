@@ -1,5 +1,6 @@
 package com.ucab.peluqueria.controlador;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -8,9 +9,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -20,8 +25,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ucab.peluqueria.modelo.Estilista;
 import com.ucab.peluqueria.modelo.ImagenServicio;
 import com.ucab.peluqueria.modelo.Servicio;
+import com.ucab.peluqueria.repositorio.RepositorioEstilista;
 import com.ucab.peluqueria.repositorio.RepositorioImagenServicio;
 import com.ucab.peluqueria.repositorio.RepositorioServicio;
 
@@ -43,10 +50,14 @@ class PruebasServicioConsultaIntegration {
     @Autowired
     private RepositorioImagenServicio repositorioImagen;
 
+    @Autowired
+    private RepositorioEstilista repositorioEstilista;
+
     private Servicio corte;
 
     @BeforeEach
     void prepararServicios() {
+        repositorioEstilista.deleteAll();
         repositorioImagen.deleteAll();
         repositorioServicio.deleteAll();
 
@@ -122,6 +133,46 @@ class PruebasServicioConsultaIntegration {
                 .andExpect(content().bytes(bytes));
     }
 
+    @Test
+    void listaSoloEstilistasActivosQueOfrecenElServicio() throws Exception {
+        Estilista ana = guardarEstilista("Ana Pérez", true, corte);
+        guardarEstilista("Luis Inactivo", false, corte);
+
+        mockMvc.perform(get("/api/servicios/{id}/estilistas", corte.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(ana.getId()))
+                .andExpect(jsonPath("$[0].nombre").value("Ana Pérez"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "CLIENTE", "PERSONAL", "ADMIN" })
+    void losRolesAutenticadosPuedenConsultarLosEstilistas(String rol) throws Exception {
+        guardarEstilista("Ana Pérez", true, corte);
+
+        mockMvc.perform(get("/api/servicios/{id}/estilistas", corte.getId())
+                        .with(user("usuario@correo.com").roles(rol)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Ana Pérez"));
+    }
+
+    @Test
+    void responde404AlConsultarEstilistasDeUnServicioInactivo() throws Exception {
+        Servicio inactivo = repositorioServicio.findByNombreIgnoreCase("Peinado").orElseThrow();
+        guardarEstilista("Ana Pérez", true, inactivo);
+
+        mockMvc.perform(get("/api/servicios/{id}/estilistas", inactivo.getId()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+    }
+
+    @Test
+    void responde404AlConsultarEstilistasDeUnServicioInexistente() throws Exception {
+        mockMvc.perform(get("/api/servicios/{id}/estilistas", 999999))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+    }
+
     private Servicio guardar(String nombre, String precio, int duracion, boolean activo) {
         Servicio servicio = new Servicio();
         servicio.setNombre(nombre);
@@ -130,5 +181,15 @@ class PruebasServicioConsultaIntegration {
         servicio.setDuracionMinutos(duracion);
         servicio.setActivo(activo);
         return repositorioServicio.save(servicio);
+    }
+
+    private Estilista guardarEstilista(String nombre, boolean activo, Servicio... servicios) {
+        Estilista estilista = new Estilista();
+        estilista.setNombre(nombre);
+        estilista.setEmail(nombre.toLowerCase().replace(" ", ".") + "@correo.com");
+        estilista.setPassword("hash-de-prueba");
+        estilista.setActivo(activo);
+        estilista.setServicios(new HashSet<>(Set.of(servicios)));
+        return repositorioEstilista.save(estilista);
     }
 }
