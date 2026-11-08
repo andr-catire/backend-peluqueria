@@ -27,6 +27,11 @@ public class ExcepcionReglaNegocio extends RuntimeException {
         return new ExcepcionReglaNegocio(codigo, mensaje, HttpStatus.CONFLICT);
     }
 
+    /** 404 Not Found. */
+    public static ExcepcionReglaNegocio noEncontrado(String codigo, String mensaje) {
+        return new ExcepcionReglaNegocio(codigo, mensaje, HttpStatus.NOT_FOUND);
+    }
+
     public String getCodigo() { return codigo; }
     public HttpStatus getStatus() { return status; }
 }

@@ -59,6 +59,16 @@ public class GestorServicios {
                 .toList();
     }
 
+    /** Devuelve un servicio activo por id. Lo usa el GET público de detalle. */
+    @Transactional(readOnly = true)
+    public ServicioRespuesta obtener(Long id) {
+        Servicio servicio = repositorioServicio.findById(id)
+                .filter(Servicio::isActivo)
+                .orElseThrow(() -> ExcepcionReglaNegocio.noEncontrado(
+                        "NOT_FOUND", "El servicio no existe."));
+        return ServicioRespuesta.desde(servicio);
+    }
+
     private Servicio guardarServicio(SolicitudServicio solicitud) {
         String nombre = normalizarNombre(solicitud.nombre());
         Optional<Servicio> existente = repositorioServicio.findByNombreIgnoreCase(nombre);
@@ -73,7 +83,7 @@ public class GestorServicios {
 
             servicio.setNombre(nombre);
             servicio.setDescripcion(normalizarDescripcion(solicitud.descripcion()));
-            servicio.setCosto(solicitud.costo());
+            servicio.setCosto(solicitud.precio());
             servicio.setDuracionMinutos(solicitud.duracionMinutos().intValueExact());
             servicio.setActivo(true);
 
@@ -83,7 +93,7 @@ public class GestorServicios {
         Servicio servicio = new Servicio();
         servicio.setNombre(nombre);
         servicio.setDescripcion(normalizarDescripcion(solicitud.descripcion()));
-        servicio.setCosto(solicitud.costo());
+        servicio.setCosto(solicitud.precio());
         servicio.setDuracionMinutos(solicitud.duracionMinutos().intValueExact());
         servicio.setActivo(true);
 

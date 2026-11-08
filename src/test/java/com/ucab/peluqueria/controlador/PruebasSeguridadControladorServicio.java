@@ -45,7 +45,7 @@ import com.ucab.peluqueria.transferencia.ServicioRespuesta;
 class PruebasSeguridadControladorServicio {
 
     private static final String CUERPO_VALIDO = """
-            {"nombre":"Corte","costo":25.50,"duracionMinutos":45}
+            {"nombre":"Corte","precio":25.50,"duracionMinutos":45}
             """;
 
     @Autowired

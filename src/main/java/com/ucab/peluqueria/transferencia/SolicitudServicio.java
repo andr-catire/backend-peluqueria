@@ -18,10 +18,10 @@ public record SolicitudServicio(
         @Size(max = 120, message = "El nombre no puede tener más de 120 caracteres.")
         String nombre,
 
-        @NotNull(message = "El costo es obligatorio.")
-        @Positive(message = "El costo debe ser mayor que 0.")
-        @Digits(integer = 8, fraction = 2, message = "El costo debe tener como máximo 8 enteros y 2 decimales.")
-        BigDecimal costo,
+        @NotNull(message = "El precio es obligatorio.")
+        @Positive(message = "El precio debe ser mayor que 0.")
+        @Digits(integer = 8, fraction = 2, message = "El precio debe tener como máximo 8 enteros y 2 decimales.")
+        BigDecimal precio,
 
         @NotNull(message = "La duración es obligatoria.")
         @Positive(message = "La duración debe ser un número entero de minutos mayor que 0")

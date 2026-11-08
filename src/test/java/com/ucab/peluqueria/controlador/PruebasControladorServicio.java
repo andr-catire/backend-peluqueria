@@ -51,12 +51,12 @@ class PruebasControladorServicio {
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"nombre":"Corte de cabello","costo":25.50,"duracionMinutos":45}
+                                {"nombre":"Corte de cabello","precio":25.50,"duracionMinutos":45}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.nombre").value("Corte de cabello"))
-                .andExpect(jsonPath("$.costo").value(25.50))
+                .andExpect(jsonPath("$.precio").value(25.50))
                 .andExpect(jsonPath("$.duracionMinutos").value(45));
     }
 
@@ -75,25 +75,25 @@ class PruebasControladorServicio {
 
         return Stream.of(
                 """
-                {"nombre":"","costo":25.50,"duracionMinutos":45}
+                {"nombre":"","precio":25.50,"duracionMinutos":45}
                 """,
                 """
-                {"nombre":"Corte","costo":0,"duracionMinutos":45}
+                {"nombre":"Corte","precio":0,"duracionMinutos":45}
                 """,
                 """
-                {"nombre":"Corte","costo":-5,"duracionMinutos":45}
+                {"nombre":"Corte","precio":-5,"duracionMinutos":45}
                 """,
                 """
-                {"nombre":"Corte","costo":25.50,"duracionMinutos":0}
+                {"nombre":"Corte","precio":25.50,"duracionMinutos":0}
                 """,
                 """
-                {"nombre":"Corte","costo":25.50,"duracionMinutos":481}
+                {"nombre":"Corte","precio":25.50,"duracionMinutos":481}
                 """,
                 """
-                {"nombre":"Corte","costo":25.50,"duracionMinutos":45.5}
+                {"nombre":"Corte","precio":25.50,"duracionMinutos":45.5}
                 """,
                 """
-                {"nombre":"Corte","costo":25.50,"duracionMinutos":45,"descripcion":"%s"}
+                {"nombre":"Corte","precio":25.50,"duracionMinutos":45,"descripcion":"%s"}
                 """.formatted(descripcionLarga));
     }
 
@@ -118,7 +118,7 @@ class PruebasControladorServicio {
         MockMultipartFile servicioPart = new MockMultipartFile(
                 "servicio", "", MediaType.APPLICATION_JSON_VALUE,
                 """
-                {"nombre":"Corte","costo":25.50,"duracionMinutos":45}
+                {"nombre":"Corte","precio":25.50,"duracionMinutos":45}
                 """.getBytes(StandardCharsets.UTF_8));
         MockMultipartFile imagenPart = new MockMultipartFile(
                 "imagen", "servicio.webp", "image/webp", new byte[]{1, 2, 3});
@@ -138,7 +138,7 @@ class PruebasControladorServicio {
         mockMvc.perform(post("/api/servicios")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"nombre":"Corte","costo":25.50,"duracionMinutos":45}
+                                {"nombre":"Corte","precio":25.50,"duracionMinutos":45}
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("DUPLICATE"))

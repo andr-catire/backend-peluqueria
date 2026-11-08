@@ -11,7 +11,7 @@ import com.ucab.peluqueria.modelo.Servicio;
 public record ServicioRespuesta(
         Long id,
         String nombre,
-        BigDecimal costo,
+        BigDecimal precio,
         Integer duracionMinutos,
         String descripcion,
         String imagenUrl) {
