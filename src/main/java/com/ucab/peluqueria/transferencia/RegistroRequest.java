@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * Datos de entrada del registro público. La cuenta siempre nace con rol CLIENTE y su ficha
- * de cliente asociada. Lo usa AuthController y lo valida Spring antes de llegar a AuthService.
+ * de cliente asociada. Lo usa ControladorAuth y lo valida Spring antes de llegar a AuthService.
  */
 public record RegistroRequest(
         @NotBlank(message = "El nombre es obligatorio.")

@@ -21,12 +21,14 @@ import com.ucab.peluqueria.modelo.Rol;
 import com.ucab.peluqueria.modelo.Usuario;
 import com.ucab.peluqueria.repositorio.RepositorioUsuario;
 import com.ucab.peluqueria.seguridad.ServicioJwt;
+import com.ucab.peluqueria.servicio.AuthService;
 
 class PruebasControladorAuth {
 
     private RepositorioUsuario usuarioRepository;
     private PasswordEncoder passwordEncoder;
     private ServicioJwt servicioJwt;
+    private AuthService authService;
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -34,8 +36,10 @@ class PruebasControladorAuth {
         usuarioRepository = mock(RepositorioUsuario.class);
         passwordEncoder = mock(PasswordEncoder.class);
         servicioJwt = mock(ServicioJwt.class);
+        authService = mock(AuthService.class);
 
-        ControladorAuth controlador = new ControladorAuth(usuarioRepository, passwordEncoder, servicioJwt);
+        ControladorAuth controlador = new ControladorAuth(
+                usuarioRepository, passwordEncoder, servicioJwt, authService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controlador)
                 .setControllerAdvice(new ManejadorGlobalExcepciones())

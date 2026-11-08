@@ -4,8 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -14,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.ucab.peluqueria.modelo.Usuario;
 
 /**
@@ -25,6 +25,7 @@ public class ServicioJwt {
 
     private static final Logger log = LoggerFactory.getLogger(ServicioJwt.class);
     private static final String ALGORITMO = "HmacSHA256";
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     private final long duracionSegundos;
 
     // Header constante para JWT con HS256: {"alg":"HS256","typ":"JWT"}
@@ -139,23 +140,23 @@ public class ServicioJwt {
     }
 
     private String extraerCampoString(String payloadBase64, String campo) {
-        String json = extraerPayloadJson(payloadBase64);
-        Pattern pattern = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*\"([^\"]*)\"");
-        Matcher matcher = pattern.matcher(json);
-        if (matcher.find()) {
-            return matcher.group(1);
+        try {
+            JsonNode nodo = MAPPER.readTree(extraerPayloadJson(payloadBase64));
+            JsonNode valor = nodo.get(campo);
+            return valor != null && valor.isTextual() ? valor.asText() : null;
+        } catch (Exception e) {
+            return null;
         }
-        return null;
     }
 
     private Long extraerCampoNumero(String payloadBase64, String campo) {
-        String json = extraerPayloadJson(payloadBase64);
-        Pattern pattern = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*(\\d+)");
-        Matcher matcher = pattern.matcher(json);
-        if (matcher.find()) {
-            return Long.parseLong(matcher.group(1));
+        try {
+            JsonNode nodo = MAPPER.readTree(extraerPayloadJson(payloadBase64));
+            JsonNode valor = nodo.get(campo);
+            return valor != null && valor.isNumber() ? valor.asLong() : null;
+        } catch (Exception e) {
+            return null;
         }
-        return null;
     }
 
     private byte[] calcularHmac(String data) throws Exception {
