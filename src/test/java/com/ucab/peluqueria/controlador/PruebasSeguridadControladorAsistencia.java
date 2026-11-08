@@ -79,6 +79,9 @@ class PruebasSeguridadControladorAsistencia {
 
     @Test
     void sinSesionResponde401() throws Exception {
+        mockMvc.perform(get("/api/asistencia"))
+                .andExpect(status().isUnauthorized());
+
         mockMvc.perform(get("/api/asistencia/hoy"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("UNAUTHORIZED"));
@@ -92,7 +95,12 @@ class PruebasSeguridadControladorAsistencia {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void unAdministradorNoPuedeUsarLaAsistencia() throws Exception {
+    void unAdministradorConsultaElListadoPeroNoMarcaSuAsistencia() throws Exception {
+        when(gestorAsistencia.listarPorFecha(any())).thenReturn(java.util.List.of());
+
+        mockMvc.perform(get("/api/asistencia"))
+                .andExpect(status().isOk());
+
         mockMvc.perform(get("/api/asistencia/hoy"))
                 .andExpect(status().isForbidden());
 
@@ -103,10 +111,20 @@ class PruebasSeguridadControladorAsistencia {
     @Test
     @WithMockUser(roles = "CLIENTE")
     void unClienteNoPuedeUsarLaAsistencia() throws Exception {
+        mockMvc.perform(get("/api/asistencia"))
+                .andExpect(status().isForbidden());
+
         mockMvc.perform(get("/api/asistencia/hoy"))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/asistencia/salida"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "PERSONAL")
+    void unEmpleadoNoPuedeVerElListadoDelAdministrador() throws Exception {
+        mockMvc.perform(get("/api/asistencia"))
                 .andExpect(status().isForbidden());
     }
 

@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import com.ucab.peluqueria.modelo.Estilista;
 import com.ucab.peluqueria.seguridad.UsuarioActual;
 import com.ucab.peluqueria.servicio.GestorAsistencia;
 import com.ucab.peluqueria.transferencia.AsistenciaHoyRespuesta;
+import com.ucab.peluqueria.transferencia.AsistenciaPersonalRespuesta;
 
 /** Pruebas HTTP de asistencia, sin base de datos ni seguridad real. */
 class PruebasControladorAsistencia {
@@ -65,6 +67,27 @@ class PruebasControladorAsistencia {
                 !conEntrada,
                 conEntrada && !conSalida,
                 OffsetDateTime.of(HOY.atTime(18, 0), ZoneOffset.ofHours(-4)));
+    }
+
+    @Test
+    void listaLaAsistenciaDelDiaConNombreYHoras() throws Exception {
+        when(gestorAsistencia.listarPorFecha(any())).thenReturn(List.of(
+                new AsistenciaPersonalRespuesta(5L, "Marta", "marta@correo.com",
+                        LocalTime.of(8, 0), LocalTime.of(17, 0), false, 0, true,
+                        "Cita médica", true),
+                new AsistenciaPersonalRespuesta(6L, "Luis", "luis@correo.com",
+                        null, null, false, 0, false, null, false)));
+
+        mockMvc.perform(get("/api/asistencia").param("fecha", "2026-11-09"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].nombre").value("Marta"))
+                .andExpect(jsonPath("$[0].horaEntrada").value("08:00:00"))
+                .andExpect(jsonPath("$[0].salidaAnticipada").value(true))
+                .andExpect(jsonPath("$[0].motivoSalida").value("Cita médica"))
+                .andExpect(jsonPath("$[1].trabajo").value(false));
+
+        verify(gestorAsistencia).listarPorFecha(LocalDate.of(2026, 11, 9));
     }
 
     @Test

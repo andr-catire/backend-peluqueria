@@ -6,7 +6,10 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,11 +22,13 @@ import com.ucab.peluqueria.excepcion.ExcepcionReglaNegocio;
 import com.ucab.peluqueria.modelo.Asistencia;
 import com.ucab.peluqueria.modelo.Estilista;
 import com.ucab.peluqueria.repositorio.RepositorioAsistencia;
+import com.ucab.peluqueria.repositorio.RepositorioEstilista;
 import com.ucab.peluqueria.transferencia.AsistenciaHoyRespuesta;
+import com.ucab.peluqueria.transferencia.AsistenciaPersonalRespuesta;
 
 /**
- * Reglas de entrada y salida del personal. La hora sale del reloj del servidor y la identidad,
- * de la sesión; el navegador solo muestra el estado calculado aquí.
+ * Reglas de entrada y salida del personal y consulta diaria del administrador. La hora sale del
+ * reloj del servidor; el navegador solo muestra el estado calculado aquí.
  */
 @Service
 public class GestorAsistencia {
@@ -32,30 +37,59 @@ public class GestorAsistencia {
     private static final String SQLSTATE_UNICO = "23505";
 
     private final RepositorioAsistencia repositorioAsistencia;
-    private final PropiedadesHorario horario;
+    private final RepositorioEstilista repositorioEstilista;
+    private final GestorHorario gestorHorario;
     private final Clock reloj;
 
     public GestorAsistencia(
             RepositorioAsistencia repositorioAsistencia,
-            PropiedadesHorario horario,
+            RepositorioEstilista repositorioEstilista,
+            GestorHorario gestorHorario,
             Clock reloj) {
         this.repositorioAsistencia = repositorioAsistencia;
-        this.horario = horario;
+        this.repositorioEstilista = repositorioEstilista;
+        this.gestorHorario = gestorHorario;
         this.reloj = reloj;
+    }
+
+    /** Lista a todos los estilistas activos con su asistencia de la fecha indicada. */
+    @Transactional(readOnly = true)
+    public List<AsistenciaPersonalRespuesta> listarPorFecha(LocalDate fecha) {
+        LocalDate dia = fecha == null ? LocalDate.now(reloj) : fecha;
+        Map<Long, Asistencia> asistencias = repositorioAsistencia.findByFecha(dia).stream()
+                .collect(Collectors.toMap(a -> a.getPersonal().getId(), a -> a));
+
+        return repositorioEstilista.findByActivoTrueOrderByNombreAsc().stream()
+                .map(estilista -> {
+                    Asistencia asistencia = asistencias.get(estilista.getId());
+                    if (asistencia == null) {
+                        return new AsistenciaPersonalRespuesta(
+                                estilista.getId(), estilista.getNombre(), estilista.getEmail(),
+                                null, null, false, 0, false, null, false);
+                    }
+                    return new AsistenciaPersonalRespuesta(
+                            estilista.getId(), estilista.getNombre(), estilista.getEmail(),
+                            asistencia.getHoraEntrada(), asistencia.getHoraSalida(),
+                            asistencia.isLlegoTarde(), asistencia.getMinutosTarde(),
+                            asistencia.isSalidaAnticipada(), asistencia.getMotivoSalida(), true);
+                })
+                .toList();
     }
 
     /** Devuelve el estado de la jornada de hoy y qué acciones permite el horario. */
     @Transactional(readOnly = true)
     public AsistenciaHoyRespuesta obtenerHoy(Estilista personal) {
+        PropiedadesHorario horario = gestorHorario.actual();
         LocalDate hoy = LocalDate.now(reloj);
         LocalTime ahora = LocalTime.now(reloj);
         Asistencia asistencia = buscar(hoy, personal.getId()).orElse(null);
-        return construirRespuesta(hoy, ahora, asistencia);
+        return construirRespuesta(hoy, ahora, asistencia, horario);
     }
 
     /** Registra la entrada una sola vez al día y marca el retraso respecto de la apertura. */
     @Transactional
     public AsistenciaHoyRespuesta registrarEntrada(Estilista personal) {
+        PropiedadesHorario horario = gestorHorario.actual();
         LocalDate hoy = LocalDate.now(reloj);
         LocalTime ahora = LocalTime.now(reloj);
 
@@ -73,7 +107,7 @@ public class GestorAsistencia {
         asistencia.setPersonal(personal);
         asistencia.setFecha(hoy);
         asistencia.setHoraEntrada(ahora);
-        asistencia.setMinutosTarde(calcularMinutosTarde(ahora));
+        asistencia.setMinutosTarde(calcularMinutosTarde(ahora, horario));
 
         try {
             asistencia = repositorioAsistencia.saveAndFlush(asistencia);
@@ -87,12 +121,13 @@ public class GestorAsistencia {
         log.info("AUDITORIA accion=ASISTENCIA_ENTRADA usuario={} tarde={}",
                 personal.getEmail(), asistencia.isLlegoTarde());
 
-        return construirRespuesta(hoy, ahora, asistencia);
+        return construirRespuesta(hoy, ahora, asistencia, horario);
     }
 
     /** Registra la salida normal desde el cierre o una anticipada con motivo, solo una vez. */
     @Transactional
     public AsistenciaHoyRespuesta registrarSalida(Estilista personal, String motivo) {
+        PropiedadesHorario horario = gestorHorario.actual();
         LocalDate hoy = LocalDate.now(reloj);
         LocalTime ahora = LocalTime.now(reloj);
 
@@ -133,7 +168,7 @@ public class GestorAsistencia {
                 personal.getEmail(), anticipada);
 
         Asistencia actualizada = buscar(hoy, personal.getId()).orElse(asistencia);
-        return construirRespuesta(hoy, ahora, actualizada);
+        return construirRespuesta(hoy, ahora, actualizada, horario);
     }
 
     private Optional<Asistencia> buscar(LocalDate fecha, Long personalId) {
@@ -141,7 +176,7 @@ public class GestorAsistencia {
     }
 
     /** Minutos desde la apertura cuando se supera la tolerancia; 0 si llegó a tiempo. */
-    private int calcularMinutosTarde(LocalTime ahora) {
+    private int calcularMinutosTarde(LocalTime ahora, PropiedadesHorario horario) {
         LocalTime limite = horario.apertura().plusMinutes(horario.toleranciaMinutos());
         if (!ahora.isAfter(limite)) {
             return 0;
@@ -150,7 +185,7 @@ public class GestorAsistencia {
     }
 
     private AsistenciaHoyRespuesta construirRespuesta(
-            LocalDate fecha, LocalTime ahora, Asistencia asistencia) {
+            LocalDate fecha, LocalTime ahora, Asistencia asistencia, PropiedadesHorario horario) {
 
         boolean hayEntrada = asistencia != null;
         boolean haySalida = hayEntrada && asistencia.getHoraSalida() != null;

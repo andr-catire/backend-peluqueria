@@ -18,6 +18,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +31,9 @@ import com.ucab.peluqueria.excepcion.ExcepcionReglaNegocio;
 import com.ucab.peluqueria.modelo.Asistencia;
 import com.ucab.peluqueria.modelo.Estilista;
 import com.ucab.peluqueria.repositorio.RepositorioAsistencia;
+import com.ucab.peluqueria.repositorio.RepositorioEstilista;
 import com.ucab.peluqueria.transferencia.AsistenciaHoyRespuesta;
+import com.ucab.peluqueria.transferencia.AsistenciaPersonalRespuesta;
 
 /** Pruebas de las reglas de entrada y salida con un reloj fijo. */
 class PruebasGestorAsistencia {
@@ -39,11 +42,16 @@ class PruebasGestorAsistencia {
     private static final LocalDate HOY = LocalDate.of(2026, 11, 9);
 
     private RepositorioAsistencia repositorio;
+    private RepositorioEstilista repositorioEstilista;
+    private GestorHorario gestorHorario;
     private Estilista personal;
 
     @BeforeEach
     void preparar() {
         repositorio = mock(RepositorioAsistencia.class);
+        repositorioEstilista = mock(RepositorioEstilista.class);
+        gestorHorario = mock(GestorHorario.class);
+        when(gestorHorario.actual()).thenReturn(horario(0));
         personal = new Estilista();
         personal.setId(5L);
         personal.setNombre("Marta");
@@ -61,7 +69,7 @@ class PruebasGestorAsistencia {
     }
 
     private GestorAsistencia gestor(Clock reloj) {
-        return new GestorAsistencia(repositorio, horario(0), reloj);
+        return new GestorAsistencia(repositorio, repositorioEstilista, gestorHorario, reloj);
     }
 
     private static PropiedadesHorario horario(int tolerancia) {
@@ -121,7 +129,9 @@ class PruebasGestorAsistencia {
     @Test
     void laToleranciaEvitaElRetrasoHastaSuLimite() {
         when(repositorio.findByPersonalIdAndFecha(5L, HOY)).thenReturn(Optional.empty());
-        GestorAsistencia conTolerancia = new GestorAsistencia(repositorio, horario(15), reloj(8, 12));
+        when(gestorHorario.actual()).thenReturn(horario(15));
+        GestorAsistencia conTolerancia = new GestorAsistencia(
+                repositorio, repositorioEstilista, gestorHorario, reloj(8, 12));
 
         assertFalse(conTolerancia.registrarEntrada(personal).llegoTarde());
     }
@@ -129,7 +139,9 @@ class PruebasGestorAsistencia {
     @Test
     void pasadoElLimiteDeToleranciaCuentaDesdeLaApertura() {
         when(repositorio.findByPersonalIdAndFecha(5L, HOY)).thenReturn(Optional.empty());
-        GestorAsistencia conTolerancia = new GestorAsistencia(repositorio, horario(15), reloj(8, 20));
+        when(gestorHorario.actual()).thenReturn(horario(15));
+        GestorAsistencia conTolerancia = new GestorAsistencia(
+                repositorio, repositorioEstilista, gestorHorario, reloj(8, 20));
 
         AsistenciaHoyRespuesta respuesta = conTolerancia.registrarEntrada(personal);
 
@@ -285,5 +297,51 @@ class PruebasGestorAsistencia {
 
         assertFalse(respuesta.puedeRegistrarEntrada());
         assertFalse(respuesta.puedeRegistrarSalida());
+    }
+
+    @Test
+    void listaTodosLosEstilistasYMarcaLosQueNoRegistraronEntrada() {
+        Estilista luis = new Estilista();
+        luis.setId(6L);
+        luis.setNombre("Luis");
+        luis.setEmail("luis@correo.com");
+
+        Asistencia deMarta = new Asistencia();
+        deMarta.setId(20L);
+        deMarta.setPersonal(personal);
+        deMarta.setFecha(HOY);
+        deMarta.setHoraEntrada(LocalTime.of(8, 12));
+        deMarta.setHoraSalida(LocalTime.of(17, 0));
+        deMarta.setMinutosTarde(12);
+        deMarta.setSalidaAnticipada(true);
+        deMarta.setMotivoSalida("Cita médica");
+
+        when(repositorioEstilista.findByActivoTrueOrderByNombreAsc())
+                .thenReturn(List.of(luis, personal));
+        when(repositorio.findByFecha(HOY)).thenReturn(List.of(deMarta));
+
+        List<AsistenciaPersonalRespuesta> filas = gestor(reloj(18, 0)).listarPorFecha(HOY);
+
+        assertEquals(2, filas.size());
+        assertEquals("Luis", filas.get(0).nombre());
+        assertFalse(filas.get(0).trabajo());
+        assertNull(filas.get(0).horaEntrada());
+
+        assertEquals("Marta", filas.get(1).nombre());
+        assertTrue(filas.get(1).trabajo());
+        assertTrue(filas.get(1).llegoTarde());
+        assertEquals(12, filas.get(1).minutosTarde());
+        assertTrue(filas.get(1).salidaAnticipada());
+        assertEquals("Cita médica", filas.get(1).motivoSalida());
+    }
+
+    @Test
+    void sinFechaListaElDiaDelRelojDelServidor() {
+        when(repositorioEstilista.findByActivoTrueOrderByNombreAsc()).thenReturn(List.of(personal));
+        when(repositorio.findByFecha(HOY)).thenReturn(List.of());
+
+        gestor(reloj(10, 0)).listarPorFecha(null);
+
+        verify(repositorio).findByFecha(HOY);
     }
 }
