@@ -5,21 +5,14 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ucab.peluqueria.modelo.Estilista;
+import com.ucab.peluqueria.modelo.Servicio;
 
 /** Acceso a datos de estilistas. */
 public interface RepositorioEstilista extends JpaRepository<Estilista, Long> {
-
-    /**
-     * Crea la fila de la subtabla personal para un usuario que se promociona.
-     */
-    @Modifying
-    @Query(value = "INSERT INTO personal (id) VALUES (:id) ON CONFLICT (id) DO NOTHING", nativeQuery = true)
-    void insertarPerfil(@Param("id") Long id);
 
     @EntityGraph(attributePaths = "servicios")
     List<Estilista> findByActivoTrueOrderByNombreAsc();
@@ -37,10 +30,9 @@ public interface RepositorioEstilista extends JpaRepository<Estilista, Long> {
             """, nativeQuery = true)
     boolean tieneCitasFuturasActivas(@Param("id") Long id, @Param("fecha") LocalDate fecha);
 
-    /** Vacía las asignaciones de servicios del estilista sin tocar su fila personal. */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(value = "DELETE FROM personal_servicios WHERE personal_id = :id", nativeQuery = true)
-    void eliminarServicios(@Param("id") Long id);
+    /** Servicios que atiende un estilista, ordenados por nombre. */
+    @Query("SELECT s FROM Estilista e JOIN e.servicios s WHERE e.id = :id ORDER BY s.nombre")
+    List<Servicio> buscarServicios(@Param("id") Long id);
 
     /** Estilistas activos que ofrecen un servicio específico. */
     @Query(value = """
