@@ -2,11 +2,16 @@ package com.ucab.peluqueria.configuracion;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -35,6 +40,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableWebSecurity
 public class ConfiguracionSeguridad {
 
+    private static final Logger log = LoggerFactory.getLogger(ConfiguracionSeguridad.class);
+
     private final FiltroAutenticacionJwt filtroJwt;
 
     public ConfiguracionSeguridad(FiltroAutenticacionJwt filtroJwt) {
@@ -49,9 +56,17 @@ public class ConfiguracionSeguridad {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-            @Value("${app.basic-auth:false}") boolean basicAuth) throws Exception {
+            @Value("${app.basic-auth:false}") boolean basicAuth,
+            Environment environment) throws Exception {
         // HTTP Basic SOLO para pruebas locales sin frontend ni login. Por defecto está apagado.
         if (basicAuth) {
+            boolean perfilProduccion = Arrays.stream(environment.getActiveProfiles())
+                    .anyMatch(perfil -> perfil.toLowerCase(Locale.ROOT).contains("prod"));
+            if (perfilProduccion) {
+                throw new IllegalStateException(
+                        "HTTP Basic no puede habilitarse con un perfil de producción.");
+            }
+            log.warn("HTTP Basic habilitado para pruebas locales. No usar en producción.");
             http.httpBasic(Customizer.withDefaults());
         } else {
             http.httpBasic(AbstractHttpConfigurer::disable);

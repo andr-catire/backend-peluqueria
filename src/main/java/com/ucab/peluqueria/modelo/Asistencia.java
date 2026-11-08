@@ -3,6 +3,8 @@ package com.ucab.peluqueria.modelo;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import org.hibernate.annotations.Check;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,6 +23,7 @@ import jakarta.validation.constraints.NotNull;
         name = "asistencias",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_asistencias_personal_fecha", columnNames = {"personal_id", "fecha"}))
+@Check(name = "ck_asistencias_minutos", constraints = "minutos_tarde >= 0")
 public class Asistencia {
 
     @Id
@@ -40,9 +43,19 @@ public class Asistencia {
     @Column(name = "hora_entrada", nullable = false)
     private LocalTime horaEntrada;
 
-    /** Queda vacía hasta que se registra la salida (Release 2). */
+    /** Queda vacía hasta que se registra la salida. */
     @Column(name = "hora_salida")
     private LocalTime horaSalida;
+
+    /** Minutos desde la apertura cuando la entrada supera la tolerancia; 0 si fue puntual. */
+    @Column(name = "minutos_tarde", nullable = false, columnDefinition = "integer default 0")
+    private int minutosTarde;
+
+    @Column(name = "salida_anticipada", nullable = false, columnDefinition = "boolean default false")
+    private boolean salidaAnticipada;
+
+    @Column(name = "motivo_salida", length = 200)
+    private String motivoSalida;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -58,4 +71,16 @@ public class Asistencia {
 
     public LocalTime getHoraSalida() { return horaSalida; }
     public void setHoraSalida(LocalTime horaSalida) { this.horaSalida = horaSalida; }
+
+    public int getMinutosTarde() { return minutosTarde; }
+    public void setMinutosTarde(int minutosTarde) { this.minutosTarde = minutosTarde; }
+
+    public boolean isSalidaAnticipada() { return salidaAnticipada; }
+    public void setSalidaAnticipada(boolean salidaAnticipada) { this.salidaAnticipada = salidaAnticipada; }
+
+    public String getMotivoSalida() { return motivoSalida; }
+    public void setMotivoSalida(String motivoSalida) { this.motivoSalida = motivoSalida; }
+
+    /** Derivado: se llegó tarde cuando hay al menos un minuto de retraso. */
+    public boolean isLlegoTarde() { return minutosTarde > 0; }
 }
