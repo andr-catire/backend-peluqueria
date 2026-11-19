@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
 
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
-import com.ucab.peluqueria.modelo.Rol;
-import com.ucab.peluqueria.modelo.Usuario;
+import com.ucab.peluqueria.usuarios.Rol;
+import com.ucab.peluqueria.usuarios.Usuario;
 
 class PruebasServicioJwt {
 

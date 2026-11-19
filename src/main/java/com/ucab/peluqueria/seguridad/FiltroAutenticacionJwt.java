@@ -10,8 +10,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.ucab.peluqueria.modelo.Usuario;
-import com.ucab.peluqueria.repositorio.RepositorioUsuario;
+import com.ucab.peluqueria.usuarios.Usuario;
+import com.ucab.peluqueria.usuarios.RepositorioUsuario;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

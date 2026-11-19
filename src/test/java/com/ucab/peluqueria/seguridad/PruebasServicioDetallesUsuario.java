@@ -14,9 +14,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import com.ucab.peluqueria.modelo.Rol;
-import com.ucab.peluqueria.modelo.Usuario;
-import com.ucab.peluqueria.repositorio.RepositorioUsuario;
+import com.ucab.peluqueria.usuarios.Rol;
+import com.ucab.peluqueria.usuarios.Usuario;
+import com.ucab.peluqueria.usuarios.RepositorioUsuario;
 
 class PruebasServicioDetallesUsuario {
 

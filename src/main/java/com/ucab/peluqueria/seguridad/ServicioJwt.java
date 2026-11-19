@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import com.ucab.peluqueria.modelo.Usuario;
+import com.ucab.peluqueria.usuarios.Usuario;
 
 /**
  * Servicio encargado de firmar y validar tokens JWT usando HMAC-SHA256 (RFC 7519).
