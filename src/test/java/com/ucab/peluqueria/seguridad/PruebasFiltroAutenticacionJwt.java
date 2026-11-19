@@ -16,9 +16,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ucab.peluqueria.modelo.Rol;
-import com.ucab.peluqueria.modelo.Usuario;
-import com.ucab.peluqueria.repositorio.RepositorioUsuario;
+import com.ucab.peluqueria.usuarios.Rol;
+import com.ucab.peluqueria.usuarios.Usuario;
+import com.ucab.peluqueria.usuarios.RepositorioUsuario;
 
 /** Pruebas del filtro JWT: un token válido no autentica a una cuenta desactivada. */
 class PruebasFiltroAutenticacionJwt {

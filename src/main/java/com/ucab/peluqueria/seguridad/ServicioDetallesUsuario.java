@@ -9,8 +9,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ucab.peluqueria.modelo.Usuario;
-import com.ucab.peluqueria.repositorio.RepositorioUsuario;
+import com.ucab.peluqueria.usuarios.Usuario;
+import com.ucab.peluqueria.usuarios.RepositorioUsuario;
 
 /** Puente con Spring Security: carga la cuenta por correo y le asigna su rol (ROLE_ADMIN, ROLE_CLIENTE...). */
 @Service
