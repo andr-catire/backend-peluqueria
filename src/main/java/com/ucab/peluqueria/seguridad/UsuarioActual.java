@@ -9,8 +9,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.ucab.peluqueria.excepcion.ExcepcionRecursoNoEncontrado;
-import com.ucab.peluqueria.modelo.Usuario;
-import com.ucab.peluqueria.repositorio.RepositorioUsuario;
+import com.ucab.peluqueria.usuarios.Usuario;
+import com.ucab.peluqueria.usuarios.RepositorioUsuario;
 
 /**
  * Obtiene la cuenta autenticada desde el contexto de Spring Security (poblado por el filtro JWT
